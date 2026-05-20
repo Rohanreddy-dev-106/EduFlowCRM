@@ -1,6 +1,7 @@
 // components/kanban/KanbanBoard.tsx
 "use client";
 
+import { useEffect } from "react";
 import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanHeader } from "./KanbanHeader";
@@ -31,6 +32,23 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const { open, selectedProspect, openDrawer, closeDrawer, updateSelected } = useDrawer();
   const { user } = useAuth();
+
+  // Keep the selected prospect in the drawer in sync with parent prospects state (e.g. for newly added notes/checklist items)
+  useEffect(() => {
+    if (open && selectedProspect) {
+      const latest = prospects.find((p) => p.id === selectedProspect.id);
+      if (latest) {
+        if (
+          JSON.stringify(latest.notes) !== JSON.stringify(selectedProspect.notes) ||
+          JSON.stringify(latest.checklistItems) !== JSON.stringify(selectedProspect.checklistItems) ||
+          latest.stage !== selectedProspect.stage ||
+          latest.updatedAt !== selectedProspect.updatedAt
+        ) {
+          updateSelected(latest);
+        }
+      }
+    }
+  }, [prospects, open, selectedProspect, updateSelected]);
 
   // Agents can only view — cannot move cards, edit or delete
   const canEdit = user?.role === "admin" || user?.role === "manager";
