@@ -3,12 +3,27 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
+import * as Sentry from "@sentry/node";
 import MainRoutes from "./src/routers/main.routs.js";
 import AuthRoutes from "./src/routers/auth.routes.js";
 
 dotenv.config();
 
+// Initialize Sentry if configured
+if (process.env.SENTRY_DSN) {
+    Sentry.init({
+        dsn: process.env.SENTRY_DSN,
+        environment: process.env.NODE_ENV || "development",
+        tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.0),
+    });
+}
+
 const server = express();
+
+// Sentry request handler middleware (if enabled)
+if (process.env.SENTRY_DSN) {
+    server.use(Sentry.Handlers.requestHandler());
+}
 
 // ─── Security Headers ────────────────────────────────────────────
 server.disable("x-powered-by");
@@ -62,6 +77,13 @@ server.use((req, res) => {
 server.use((err, req, res, _next) => {
     console.error(`[ERROR] ${req.method} ${req.originalUrl}:`, err.message || err);
 
+    // Capture to Sentry if configured
+    try {
+        if (process.env.SENTRY_DSN) Sentry.captureException(err);
+    } catch (e) {
+        console.error("Failed to send error to Sentry:", e && e.message ? e.message : e);
+    }
+
     // Validation error
     if (err.name === "ValidationError") {
         return res.status(400).json({
@@ -95,5 +117,10 @@ server.use((err, req, res, _next) => {
         ...(process.env.NODE_ENV !== "production" && { stack: err.stack }),
     });
 });
+
+// Sentry error handler (should be after all other error handlers)
+if (process.env.SENTRY_DSN) {
+    server.use(Sentry.Handlers.errorHandler());
+}
 
 export default server;

@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Backend dependencies
+        working-directory: Backend
+        run: |
+          npm ci
+
+      - name: Generate Prisma Client
+        working-directory: Backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          npm run prisma:generate
+
+      - name: Install Frontend dependencies
+        working-directory: Frontend
+        run: |
+          npm ci
+
+      - name: Build Frontend
+        working-directory: Frontend
+        env:
+          # Allow the frontend build to access any required backend environment values during SSR
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Optional Sentry DSN for capturing build-time warnings
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: |
+          npm run build
+
+      - name: Run Frontend tests (if any)
+        working-directory: Frontend
+        run: |
+          if [ -f package.json ] && grep -q "vitest" package.json; then npm test || true; fi

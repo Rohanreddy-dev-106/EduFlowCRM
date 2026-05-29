@@ -40,19 +40,20 @@ KALNET CRM is a purpose-built Customer Relationship Management system designed f
 - View **real-time analytics** — stage breakdowns, conversion rates, overdue follow-ups, and monthly trends
 - Control team access through a **role-based permission model** (Admin / Manager / Agent)
 
-The system follows a **decoupled architecture**: a Node.js/Express REST API backend stores all data in MongoDB, while a Next.js 14 frontend communicates with that API both server-side (via Next.js API route proxies) and client-side.
+The system follows a **decoupled architecture**: a Node.js/Express REST API backend stores all data in MySQL/MariaDB through Prisma, while a Next.js 14 frontend communicates with that API both server-side (via Next.js API route proxies) and client-side.
 
 ---
 
 ## 2. Tech Stack
 
-### Backend - Version 1 (Legacy)
+### Backend
 
 | Layer | Technology | Version |
 |---|---|---|
 | Runtime | Node.js (ES Modules) | ≥ 18.x |
 | Framework | Express | 5.x |
-| Database | MongoDB via Mongoose | 9.x |
+| Database | MySQL / MariaDB | 10.x / 10.5+ |
+| ORM | Prisma | 7.8.x |
 | Authentication | JSON Web Tokens (JWT) | 9.x |
 | Password Hashing | bcrypt | 6.x |
 | Input Validation | Zod | 4.x |
@@ -131,9 +132,8 @@ The system follows a **decoupled architecture**: a Node.js/Express REST API back
                        │ Mongoose ODM
                        ▼
 ┌──────────────────────────────────────────────────────────┐
-│             Database (Version 1 vs Version 2)             │
-│   V1: MongoDB (Collections: users, cards, etc.)           │
-│   V2: MySQL / MariaDB via Prisma ORM                      │
+│                Database (Current Project)                 │
+│         MySQL / MariaDB via Prisma ORM                    │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -334,7 +334,7 @@ Before running this project, ensure you have the following installed:
 |---|---|---|
 | Node.js | 18.x | `node --version` |
 | npm | 9.x | `npm --version` |
-| MongoDB | 6.x (local) or Atlas — optional if using Prisma/MySQL | — |`r`n| MySQL / MariaDB | 10.x / 10.5+ (for Prisma) — optional | — |
+| MySQL / MariaDB | 10.x / 10.5+ (for Prisma) | — |
 | Git | Any | `git --version` |
 
 > **Database Setup**: 
@@ -353,14 +353,22 @@ Create this file by copying the example shipped at the repository root of the ba
 cp Backend/.env.example Backend/.env
 ```
 
-Then fill in each value. The project supports both the original MongoDB connection string and a Prisma `DATABASE_URL` for MySQL/MariaDB.
+Then fill in each value. The current backend uses Prisma with a MySQL/MariaDB `DATABASE_URL`.
+
+If the backend crashes on startup, teammates should run these commands first:
+
+```bash
+cd Backend
+npm install
+npx prisma generate
+npm start
+```
+
+If that still fails, check that `Backend/.env` exists, `DATABASE_URL` matches the local MySQL credentials, and the database server is running.
 
 ```env
 # Use for Prisma / MySQL (example):
 DATABASE_URL="mysql://root:password@127.0.0.1:3306/kalnet_crm"
-
-# Original MongoDB variable (kept for backward compatibility):
-MONGODB_CONNECTION_STRING=mongodb://localhost:27017/kalnet-crm
 
 # Server
 PORT=6060
@@ -381,13 +389,12 @@ FRONTEND_URL=http://localhost:3000
 | Variable | Required | Description |
 |---|:---:|---|
 | `PORT` | Yes | Port the Express server listens on |
-| `MONGODB_CONNECTION_STRING` | Yes | Full MongoDB connection URI |
 | `JWT_SECRET` | Yes | Secret key for signing JWTs — use a long random string |
 | `JWT_EXPIRES_IN` | Yes | JWT expiry duration (e.g. `7d`, `24h`) |
 | `NODE_ENV` | Yes | `development` or `production` |
 | `FRONTEND_URL` | Yes | Allowed CORS origin — your Next.js URL |
 
-> **Security**: Never commit `Backend/src/.env` to version control. It is already listed in `.gitignore`.
+> **Security**: Never commit secrets to version control. Keep them only in `Backend/.env` locally or in your deployment environment variables.
 
 ---
 
@@ -489,17 +496,10 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### First-Time Setup — Create the First Admin User
 
-The registration endpoint defaults all new users to the `agent` role. To create the first admin, register normally and then manually update the role in MongoDB:
+The registration endpoint defaults all new users to the `agent` role. To create the first admin, register normally and then manually update the role in the database:
 
 ```bash
-# Open MongoDB shell (replace with your connection string if using Atlas)
-mongosh "mongodb://localhost:27017/kalnet-crm"
-
-# Promote a user to admin
-db.users.updateOne(
-  { email: "your-email@example.com" },
-  { $set: { role: "admin" } }
-)
+# Use your database tool or Prisma Studio and set the user's role to `admin`
 ```
 
 Once you have an admin, you can manage all other user roles from within the application at `GET /api/auth/users` and `PATCH /api/auth/users/:id/role`.
@@ -797,7 +797,7 @@ Valid values: `todo`, `done`
 
 #### `GET /api/analytics` — All roles
 
-Returns a full analytics summary computed in real time from MongoDB aggregations.
+Returns a full analytics summary computed in real time from the database.
 
 **Response:**
 ```json
@@ -989,7 +989,7 @@ Each step is assigned to `"KALNET Ops"` by default and has a due date rolling 1 
 
 ## 17. Analytics
 
-The analytics endpoint (`GET /api/analytics`) computes all stats in a single round-trip using `Promise.all()` to run all MongoDB queries concurrently:
+The analytics endpoint (`GET /api/analytics`) computes all stats in a single round-trip using `Promise.all()` to run all database queries concurrently:
 
 | Metric | How It's Calculated |
 |---|---|
@@ -998,7 +998,7 @@ The analytics endpoint (`GET /api/analytics`) computes all stats in a single rou
 | `overdueCount` | Cards where `nextFollowUpDate < now` AND stage ≠ `Pilot Closed` |
 | `closedCount` | Cards where `stage = Pilot Closed` |
 | `closedThisMonth` | Pilot Closed cards with `updatedAt ≥ first day of current month` |
-| `stageBreakdown` | MongoDB `$group` aggregation per stage: count + average days since creation |
+| `stageBreakdown` | Grouped count per stage with average days since creation |
 | `monthlyTrend` | Cards created per month for the last 6 months |
 
 ---
@@ -1029,14 +1029,11 @@ The application has migrated to a robust relational architecture using **MySQL /
 
 ## 17.2. Environment Variables & Coexistence
 
-The application accepts both standard MongoDB connections and MySQL connections seamlessly. To configure the current Version 2 backend, set `DATABASE_URL` in `Backend/src/.env`:
+The current backend uses Prisma with MySQL/MariaDB. To configure Version 2, set `DATABASE_URL` in `Backend/.env`:
 
 ```env
 # Version 2 Connection - MySQL / MariaDB (Active)
 DATABASE_URL="mysql://root:password@127.0.0.1:3306/kalnet_crm"
-
-# Version 1 Connection - MongoDB (Kept for compatibility and rollbacks)
-MONGODB_CONNECTION_STRING=mongodb://localhost:27017/kalnet-crm
 ```
 
 ---
@@ -1125,12 +1122,12 @@ Set the following environment variable in your Vercel project dashboard:
 NEXT_PUBLIC_BACKEND_URL=https://api.yourdomain.com
 ```
 
-### MongoDB Atlas (Recommended for Production)
+### Database Hosting (Recommended for Production)
 
-1. Create a free cluster at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas)
+1. Create or provision a managed MySQL/MariaDB instance
 2. Create a database user with read/write permissions
-3. Whitelist your backend server's IP address (or use `0.0.0.0/0` cautiously)
-4. Copy the connection string and set it as `MONGODB_CONNECTION_STRING`
+3. Whitelist your backend server's IP address if your provider requires it
+4. Copy the connection string and set it as `DATABASE_URL`
 
 ### Production Checklist
 
@@ -1139,19 +1136,19 @@ NEXT_PUBLIC_BACKEND_URL=https://api.yourdomain.com
 - [ ] Rate limits are tightened
 - [ ] HTTPS is enabled on both frontend and backend
 - [ ] `FRONTEND_URL` matches the exact production URL (no trailing slash)
-- [ ] MongoDB Atlas IP whitelist is configured
-- [ ] `Backend/src/.env` is excluded from version control (check `.gitignore`)
+- [ ] Managed database access rules are configured
+- [ ] `Backend/.env` is excluded from version control (check `.gitignore`)
 - [ ] Error stack traces are not leaked (they are hidden when `NODE_ENV=production`)
 
 ---
 
 ## 19. Common Issues & Troubleshooting
 
-### `MongoDB connection failed` on backend start
+### `Database connection failed` on backend start
 
-- Check that MongoDB is running locally: `sudo systemctl status mongod` (Linux) or the MongoDB Compass status indicator
-- Verify `MONGODB_CONNECTION_STRING` in `Backend/src/.env` has no typos
-- For Atlas, confirm your IP is whitelisted and credentials are correct
+- Check that MySQL/MariaDB is running locally and listening on the host/port in `DATABASE_URL`
+- Verify `DATABASE_URL` in `Backend/.env` has no typos
+- Confirm the database name exists and the username/password are correct
 
 ### `CORS error` in browser console
 
@@ -1160,7 +1157,7 @@ NEXT_PUBLIC_BACKEND_URL=https://api.yourdomain.com
 
 ### `JWT_SECRET is not configured` error
 
-- The `JWT_SECRET` variable is missing or empty in `Backend/src/.env`
+- The `JWT_SECRET` variable is missing or empty in `Backend/.env`
 - Restart the backend server after editing `.env`
 
 ### Drag and drop not working
@@ -1171,7 +1168,7 @@ NEXT_PUBLIC_BACKEND_URL=https://api.yourdomain.com
 ### Checklist not appearing for a prospect
 
 - The checklist is auto-created when a prospect is first saved via `POST /api/cards`
-- If a prospect was created before this feature was added, call `POST /api/cards/:id` (patch it) and trigger a manual checklist seed, or insert checklist documents directly in MongoDB
+- If a prospect was created before this feature was added, call `POST /api/cards/:id` (patch it) and trigger a manual checklist seed, or insert checklist rows directly in the database
 
 ### `Too many requests` error (429)
 
@@ -1181,6 +1178,18 @@ NEXT_PUBLIC_BACKEND_URL=https://api.yourdomain.com
 
 - Run `npm run lint` to catch type or ESLint issues
 - Ensure all environment variables prefixed with `NEXT_PUBLIC_` are defined before building
+
+---
+
+## Monitoring & CI
+
+- Monitoring: The backend supports Sentry for error monitoring. To enable, set `SENTRY_DSN` in `Backend/.env` (or in your hosting environment). When configured, the backend will initialize Sentry and send unhandled exceptions and captured errors. You can control sampling with `SENTRY_TRACES_SAMPLE_RATE`.
+
+- CI: This repository includes a GitHub Actions workflow at `.github/workflows/ci.yml` that installs backend dependencies, runs `npm run prisma:generate`, then installs and builds the frontend. This ensures the Prisma client is generated before the frontend build step (avoids missing client errors during SSR builds).
+
+## Legacy / Housekeeping Notes
+
+- The project uses Prisma with a `DATABASE_URL` for MySQL/MariaDB.
 
 ---
 

@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import prisma from "../db/prismaClient.js";
+import { DEFAULT_ROLE, isValidRole } from "../utils/roles.js";
 
 function getJwtConfig() {
     const JWT_SECRET = process.env.JWT_SECRET;
@@ -29,10 +30,14 @@ function sanitizeUser(userDoc) {
 }
 
 export async function registerUser(payload) {
-    const { name, email, password } = payload;
+    const { name, email, password, role } = payload;
 
-    if (!name || !email || !password) {
-        throw new Error("name, email and password are required");
+    if (!name || !email || !password || !role) {
+        throw new Error("name, email, password and role are required");
+    }
+
+    if (!isValidRole(role)) {
+        throw new Error("Invalid role selected");
     }
 
     const normalizedEmail = String(email).toLowerCase().trim();
@@ -52,7 +57,7 @@ export async function registerUser(payload) {
             name: String(name).trim(),
             email: normalizedEmail,
             password: passwordHash,
-            role: "agent"
+            role: String(role)
         }
     });
 

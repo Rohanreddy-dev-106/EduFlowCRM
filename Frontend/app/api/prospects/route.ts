@@ -9,6 +9,7 @@ import { cursorQuerySchema, prospectFieldsSchema } from "@/lib/validation/schema
 import { jsonWithHeaders } from "@/lib/apiResponse";
 import { applyRateLimit } from "@/lib/rateLimit";
 import { captureException, createRequestId, log } from "@/lib/logger";
+import { PROSPECT_EDIT_ROLES, PROSPECT_VIEW_ROLES } from "@/lib/roles";
 
 function mapNote(note: any) {
   return {
@@ -36,7 +37,7 @@ function mapChecklistItem(item: any) {
 
 export async function GET(req: NextRequest) {
   const requestId = createRequestId();
-  const auth = await requireAuth(["admin", "manager", "agent"]);
+  const auth = await requireAuth(PROSPECT_VIEW_ROLES);
   if (!auth.ok) return auth.response;
   const limiter = applyRateLimit(`prospects:get:${auth.user.id}`, 120, 60_000);
   if (!limiter.ok) {
@@ -101,7 +102,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const requestId = createRequestId();
-  const auth = await requireAuth(["admin", "manager"]);
+  const auth = await requireAuth(PROSPECT_EDIT_ROLES);
   if (!auth.ok) return auth.response;
   const limiter = applyRateLimit(`prospects:post:${auth.user.id}`, 60, 60_000);
   if (!limiter.ok) {

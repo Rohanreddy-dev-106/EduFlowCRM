@@ -1,4 +1,5 @@
 import prisma from "../db/prismaClient.js";
+import { createCardService } from "../service/card.service.js";
 
 const NOTE_FIELDS = {
     id: true,
@@ -89,19 +90,8 @@ export default class Repositories {
     }
 
     async createCard(data) {
-        return await prisma.prospect.create({
-            data: {
-                name: data.name,
-                school: data.school,
-                role: data.role || null,
-                email: data.email || null,
-                phone: data.phone || null,
-                source: data.source || "Direct",
-                stage: data.stage || "Cold",
-                lastContactDate: data.lastContactDate ? new Date(data.lastContactDate) : null,
-                nextFollowUpDate: data.nextFollowUpDate ? new Date(data.nextFollowUpDate) : null
-            }
-        });
+        // Delegate to the service layer to avoid duplicated creation logic
+        return await createCardService(data);
     }
 
     async deleteCard(id) {

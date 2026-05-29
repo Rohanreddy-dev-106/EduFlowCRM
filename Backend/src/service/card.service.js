@@ -1,29 +1,5 @@
 import prisma from "../db/prismaClient.js";
-
-function buildChecklistData(prospectId) {
-    const steps = [
-        "School KYC completed",
-        "Admin account created",
-        "Teachers onboarded",
-        "Student data uploaded",
-        "Class structure setup",
-        "Fee module configured",
-        "Attendance module enabled",
-        "Timetable created",
-        "Training session completed",
-        "Go-live confirmation"
-    ];
-
-    return steps.map((title, index) => ({
-        prospectId,
-        stepNumber: index + 1,
-        title,
-        description: title,
-        assignee: "KALNET Ops",
-        status: "todo",
-        dueDate: new Date(Date.now() + (index + 1) * 86400000)
-    }));
-}
+import { createOnboardingChecklist } from "../utils/onbord.chicklist.js";
 
 export const createCardService = async (payload) => {
     return prisma.$transaction(async (tx) => {
@@ -42,10 +18,7 @@ export const createCardService = async (payload) => {
         });
 
         if (created.stage === "Pilot Closed") {
-            await tx.onboardingChecklist.createMany({
-                data: buildChecklistData(created.id),
-                skipDuplicates: true
-            });
+            await createOnboardingChecklist(created.id, tx);
         }
 
         return created;
@@ -77,10 +50,7 @@ export const updateCardService = async (cardId, payload) => {
         });
 
         if (existing.stage !== "Pilot Closed" && updated.stage === "Pilot Closed") {
-            await tx.onboardingChecklist.createMany({
-                data: buildChecklistData(updated.id),
-                skipDuplicates: true
-            });
+            await createOnboardingChecklist(updated.id, tx);
         }
 
         return updated;

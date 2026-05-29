@@ -6,12 +6,21 @@ import { usePathname } from "next/navigation";
 import { BarChart3, Kanban, Settings, Zap, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { ANALYTICS_ROLES, PROSPECT_VIEW_ROLES, hasRoleAccess, type Role } from "@/lib/roles";
+import type { ComponentType } from "react";
 
 const NAV_ITEMS = [
-  { href: "/",                          icon: Kanban,    label: "Pipeline"   },
-  { href: "/admin/crm/analytics",       icon: BarChart3, label: "Analytics"  },
-  { href: "/settings",                  icon: Settings,  label: "Settings"   },
+  { href: "/", icon: Kanban, label: "Pipeline", allowedRoles: PROSPECT_VIEW_ROLES },
+  { href: "/admin/crm/analytics", icon: BarChart3, label: "Analytics", allowedRoles: ANALYTICS_ROLES },
+  { href: "/settings", icon: Settings, label: "Settings", allowedRoles: PROSPECT_VIEW_ROLES },
 ];
+
+type NavItem = {
+  href: string;
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  allowedRoles: readonly Role[];
+};
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -35,7 +44,7 @@ export function Sidebar() {
         <p className="text-[10px] font-mono font-semibold text-ink-5 uppercase tracking-widest px-2 mb-2">
           Menu
         </p>
-        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
+        {NAV_ITEMS.filter(({ allowedRoles }: NavItem) => hasRoleAccess(user?.role, allowedRoles)).map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
             <Link

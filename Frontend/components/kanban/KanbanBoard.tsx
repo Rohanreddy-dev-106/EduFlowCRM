@@ -10,6 +10,7 @@ import { useDrawer } from "@/hooks/useDrawer";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { STAGE_ORDER, type Stage, type Prospect } from "@/types";
 import { isOverdue, isDueToday } from "@/lib/utils";
+import { PROSPECT_EDIT_ROLES, hasRoleAccess } from "@/lib/roles";
 
 interface KanbanBoardProps {
   prospects: Prospect[];
@@ -46,7 +47,7 @@ export function KanbanBoard({
   }, [prospects, open, selectedProspect, updateSelected]);
 
   // Agents can only view — cannot move cards, edit or delete
-  const canEdit = user?.role === "admin" || user?.role === "manager";
+  const canEdit = hasRoleAccess(user?.role, PROSPECT_EDIT_ROLES);
 
   const handleDragEnd = async (result: DropResult) => {
     if (!canEdit) return;

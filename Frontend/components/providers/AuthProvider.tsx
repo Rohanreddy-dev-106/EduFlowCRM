@@ -2,19 +2,20 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import type { Role } from "@/lib/roles";
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: Role;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role: Role) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -69,14 +70,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setUser(data.user);
-    window.location.assign("/");
+    window.location.assign(data.user?.role === "admin" ? "/admin/crm/analytics" : "/");
   }, []);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
+  const register = useCallback(async (name: string, email: string, password: string, role: Role) => {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, role }),
     });
 
     const data = await res.json();
@@ -86,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setUser(data.user);
-    window.location.assign("/");
+    window.location.assign(data.user?.role === "admin" ? "/admin/crm/analytics" : "/");
   }, []);
 
   const logout = useCallback(async () => {

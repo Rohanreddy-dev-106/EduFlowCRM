@@ -13,7 +13,7 @@ const CHECKLIST_STEPS = [
     "Go-live confirmation"
 ];
 
-export const createOnboardingChecklist = async (prospectId) => {
+export const createOnboardingChecklist = async (prospectId, tx = null) => {
     const checklistDocs = CHECKLIST_STEPS.map((title, index) => ({
         prospectId,
         stepNumber: index + 1,
@@ -24,7 +24,14 @@ export const createOnboardingChecklist = async (prospectId) => {
         dueDate: new Date(Date.now() + (index + 1) * 86400000)
     }));
 
-    await prisma.onboardingChecklist.createMany({
+    if (tx) {
+        return await tx.onboardingChecklist.createMany({
+            data: checklistDocs,
+            skipDuplicates: true
+        });
+    }
+
+    return await prisma.onboardingChecklist.createMany({
         data: checklistDocs,
         skipDuplicates: true
     });

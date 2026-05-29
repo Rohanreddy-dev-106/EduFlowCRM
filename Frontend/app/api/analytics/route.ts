@@ -5,12 +5,13 @@ import { requireAuth } from "@/lib/serverAuth";
 import { jsonWithHeaders } from "@/lib/apiResponse";
 import { applyRateLimit } from "@/lib/rateLimit";
 import { captureException, createRequestId } from "@/lib/logger";
+import { ANALYTICS_ROLES } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const requestId = createRequestId();
-  const auth = await requireAuth(["admin", "manager", "agent"]);
+  const auth = await requireAuth(ANALYTICS_ROLES);
   if (!auth.ok) return auth.response;
   const limiter = applyRateLimit(`analytics:get:${auth.user.id}`, 120, 60_000);
   if (!limiter.ok) return jsonWithHeaders({ error: "Too many requests" }, { status: 429 });

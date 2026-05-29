@@ -7,6 +7,7 @@ import { AddProspectModal } from "@/components/modals/AddProspectModal";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useProspects } from "@/hooks/useProspects";
 import { useState } from "react";
+import { PROSPECT_EDIT_ROLES, hasRoleAccess } from "@/lib/roles";
 
 export default function PipelinePage() {
   const { user } = useAuth();
@@ -21,7 +22,7 @@ export default function PipelinePage() {
     addNote,
   } = useProspects();
   const [showAddModal, setShowAddModal] = useState(false);
-  const canCreate = user?.role === "admin" || user?.role === "manager";
+  const canCreate = hasRoleAccess(user?.role, PROSPECT_EDIT_ROLES);
 
   return (
     <>

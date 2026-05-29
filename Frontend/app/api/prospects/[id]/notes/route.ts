@@ -42,7 +42,7 @@ export async function GET(
     const page = notes.slice(0, limit);
 
     return jsonWithHeaders({
-      data: page.map((note) => ({
+      data: page.map((note: { id: string; prospectId: string; content: string; createdAt: string | Date }) => ({
         id: note.id,
         prospectId: note.prospectId,
         content: note.content,

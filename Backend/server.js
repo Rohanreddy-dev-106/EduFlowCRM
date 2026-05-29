@@ -1,11 +1,49 @@
 import server from "./index.js";
+import * as Sentry from "@sentry/node";
+
 const PORT = Number(process.env.PORT) || 5000;
 
-try {
-    server.listen(PORT, () => {
-        console.log(`Server is Up and Running at PORT ${PORT}`);
-    });
-} catch (error) {
-    console.error("Failed to start server:", error.message);
+server.listen(PORT, () => {
+    console.log(`Server is Up and Running at PORT ${PORT}`);
+});
+
+// Listen for server errors during startup/runtime
+server.on("error", (err) => {
+    console.error("Server encountered an error:", err && err.message ? err.message : err);
+    // If the error happens during bind/startup, exit with non-zero code
     process.exit(1);
-}
+});
+
+// Global process handlers to avoid silent exits
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled Rejection at:", promise, "reason:", reason);
+    try {
+        if (process.env.SENTRY_DSN) Sentry.captureException(reason instanceof Error ? reason : new Error(String(reason)));
+    } catch (e) {
+        console.error("Failed sending unhandledRejection to Sentry:", e && e.message ? e.message : e);
+    }
+    // Give a chance for logging to flush then exit
+    setTimeout(() => process.exit(1), 100).unref?.();
+});
+
+process.on("uncaughtException", (err) => {
+    console.error("Uncaught Exception:", err && err.message ? err.message : err);
+    console.error(err && err.stack ? err.stack : err);
+    try {
+        if (process.env.SENTRY_DSN) Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+    } catch (e) {
+        console.error("Failed sending uncaughtException to Sentry:", e && e.message ? e.message : e);
+    }
+    // Crash the process to avoid undefined state
+    setTimeout(() => process.exit(1), 100).unref?.();
+});
+
+process.on("SIGINT", () => {
+    console.log("Received SIGINT, shutting down gracefully...");
+    process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+    console.log("Received SIGTERM, shutting down gracefully...");
+    process.exit(0);
+});

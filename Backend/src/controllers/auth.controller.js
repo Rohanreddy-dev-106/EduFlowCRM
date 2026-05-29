@@ -5,6 +5,7 @@ import {
     registerUser
 } from "../service/auth.service.js";
 import prisma from "../db/prismaClient.js";
+import { ROLES } from "../utils/roles.js";
 
 function tokenCookieOptions() {
     return {
@@ -64,11 +65,10 @@ export default class AuthController {
             const { id } = req.params;
             const { role } = req.body;
 
-            const validRoles = ["admin", "manager", "agent"];
-            if (!role || !validRoles.includes(role)) {
+            if (!role || !ROLES.includes(role)) {
                 return res.status(400).json({
                     success: false,
-                    message: `role must be one of: ${validRoles.join(", ")}`
+                    message: `role must be one of: ${ROLES.join(", ")}`
                 });
             }
 

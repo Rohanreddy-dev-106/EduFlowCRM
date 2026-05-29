@@ -5,12 +5,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Zap, User, Mail, Lock, ArrowRight, AlertCircle } from "lucide-react";
+import { ROLES, type Role } from "@/lib/roles";
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<Role>("agent");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +22,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(name, email, password);
+      await register(name, email, password, role);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -110,6 +112,24 @@ export default function RegisterPage() {
                   className="w-full bg-surface-3 border border-ink-5 rounded-lg pl-10 pr-4 py-2.5 text-sm text-ink-1 placeholder:text-ink-5 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-colors"
                 />
               </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="register-role" className="text-xs font-medium text-ink-3 uppercase tracking-wider font-mono">
+                Role
+              </label>
+              <select
+                id="register-role"
+                value={role}
+                onChange={(e) => setRole(e.target.value as Role)}
+                className="w-full bg-surface-3 border border-ink-5 rounded-lg px-4 py-2.5 text-sm text-ink-1 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-colors"
+              >
+                {ROLES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <button
