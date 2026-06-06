@@ -15,6 +15,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  notificationLogs NotificationLog[]
+  // Prospects owned by this user
+  ownedProspects   Prospect[]
+
   @@index([role])
 }
 
@@ -29,9 +33,16 @@ model Prospect {
   stage            String                @default("Cold")
   lastContactDate  DateTime?
   nextFollowUpDate DateTime?
+  completed        Boolean               @default(false)
+  completedAt      DateTime?
   deletedAt        DateTime?
   createdAt        DateTime              @default(now())
   updatedAt        DateTime              @updatedAt
+
+  // Optional owner relationship: a `User` responsible for this prospect
+  owner            User?                 @relation(fields: [ownerId], references: [id])
+  ownerId          String?
+  lastNotifiedAt   DateTime?
 
   notes            ProspectNote[]
   checklistItems   OnboardingChecklist[]
@@ -40,6 +51,7 @@ model Prospect {
   @@index([stage, createdAt])
   @@index([nextFollowUpDate])
   @@index([deletedAt])
+  @@index([completed])
 }
 
 model AuditLog {
@@ -81,4 +93,19 @@ model OnboardingChecklist {
 
   @@unique([prospectId, stepNumber])
   @@index([prospectId, status])
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String   @default("notification") // e.g., "overdue_prospects", "milestone", etc.
+  title     String
+  message   String
+  metadata  Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt])
+  @@index([type, createdAt])
 }

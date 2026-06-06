@@ -6,6 +6,8 @@ import rateLimit from "express-rate-limit";
 import * as Sentry from "@sentry/node";
 import MainRoutes from "./src/routers/main.routs.js";
 import AuthRoutes from "./src/routers/auth.routes.js";
+import NotificationRoutes from "./src/routers/notification.routes.js";
+import DebugRoutes from "./src/routers/debug.routes.js";
 
 dotenv.config();
 
@@ -66,6 +68,8 @@ server.get("/", (req, res) => {
 });
 
 server.use("/api/auth", authLimiter, AuthRoutes);
+server.use("/api/notifications", apiLimiter, NotificationRoutes);
+server.use("/api/debug", apiLimiter, DebugRoutes);
 server.use("/api", apiLimiter, MainRoutes);
 
 // ─── 404 Handler ─────────────────────────────────────────────────

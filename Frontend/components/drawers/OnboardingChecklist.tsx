@@ -10,9 +10,10 @@ interface OnboardingChecklistProps {
   prospectId: string;
   items: OnboardingChecklistItem[];
   canEdit?: boolean;
+  onCompletionChange?: (completed: boolean) => void;
 }
 
-export function OnboardingChecklist({ prospectId, items, canEdit = false }: OnboardingChecklistProps) {
+export function OnboardingChecklist({ prospectId, items, canEdit = false, onCompletionChange }: OnboardingChecklistProps) {
   const [localItems, setLocalItems] = useState(items);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +38,11 @@ export function OnboardingChecklist({ prospectId, items, canEdit = false }: Onbo
         body: JSON.stringify({ status: newStatus }),
       });
       if (!res.ok) throw new Error("Failed to update checklist item");
+      const data = await res.json();
+      // Notify parent if completion status changed
+      if (data.prospectCompletion && onCompletionChange) {
+        onCompletionChange(data.prospectCompletion.completed);
+      }
     } catch {
       // Revert
       setLocalItems(items);
@@ -66,6 +72,14 @@ export function OnboardingChecklist({ prospectId, items, canEdit = false }: Onbo
           />
         </div>
       </div>
+
+      {/* Completion message */}
+      {doneCount === localItems.length && localItems.length > 0 && (
+        <div className="p-3 rounded-lg bg-success-muted border border-success/30">
+          <p className="text-sm font-semibold text-success">✓ Onboarding Complete!</p>
+          <p className="text-xs text-success/80 mt-1">All steps have been completed for this prospect.</p>
+        </div>
+      )}
 
       {/* Items */}
       {error && <p className="text-xs font-mono text-danger">{error}</p>}

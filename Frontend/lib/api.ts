@@ -84,6 +84,8 @@ export function mapCardToProspect(card: any) {
     stage:            toFrontendStage(card.stage),
     lastContactDate:  card.lastContactDate || null,
     nextFollowUpDate: card.nextFollowUpDate || null,
+    completed:        card.completed || false,
+    completedAt:      card.completedAt || null,
     createdAt:        card.createdAt,
     updatedAt:        card.updatedAt || card.createdAt,
     notes:            [],

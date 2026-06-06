@@ -23,7 +23,7 @@ const seedProspects = [
         phone: "+1-555-0101",
         source: "Conference",
         stage: "Cold"
-    },
+    },solution for 
     {
         name: "Bright Future Academy",
         school: "Bright Future Academy",
@@ -108,14 +108,39 @@ const seedProspects = [
 ];
 
 async function main() {
+    // Upsert some users to act as owners/admin for seeded prospects
+    const admin = await prisma.user.upsert({
+        where: { email: 'admin@example.com' },
+        update: {},
+        create: { name: 'Admin User', email: 'admin@example.com', password: 'password', role: 'admin' }
+    });
+
+    const ownerA = await prisma.user.upsert({
+        where: { email: 'owner.a@example.com' },
+        update: {},
+        create: { name: 'Owner A', email: 'owner.a@example.com', password: 'password', role: 'agent' }
+    });
+
+    const ownerB = await prisma.user.upsert({
+        where: { email: 'owner.b@example.com' },
+        update: {},
+        create: { name: 'Owner B', email: 'owner.b@example.com', password: 'password', role: 'agent' }
+    });
+
+    const owners = [ownerA, ownerB];
+
     await prisma.onboardingChecklist.deleteMany();
     await prisma.prospectNote.deleteMany();
     await prisma.prospect.deleteMany();
 
-    for (const prospect of seedProspects) {
+    for (let i = 0; i < seedProspects.length; i++) {
+        const prospect = seedProspects[i];
+        const owner = owners[i % owners.length];
+
         const created = await prisma.prospect.create({
             data: {
                 ...prospect,
+                ownerId: owner.id,
                 lastContactDate: new Date(Date.now() - 2 * 86400000),
                 nextFollowUpDate: new Date(Date.now() + 3 * 86400000)
             }

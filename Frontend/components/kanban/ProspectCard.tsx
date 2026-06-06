@@ -2,7 +2,7 @@
 "use client";
 
 import { Draggable } from "@hello-pangea/dnd";
-import { AlertCircle, Calendar, Clock } from "lucide-react";
+import { AlertCircle, Calendar, Clock, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn, daysSince, formatDate, isOverdue, isDueToday } from "@/lib/utils";
@@ -38,8 +38,16 @@ export function ProspectCard({ prospect, index, onClick }: ProspectCardProps) {
             snapshot.isDragging && "shadow-card-hover rotate-1 scale-105 border-brand-600 bg-surface-4"
           )}
         >
+          {/* Completed badge */}
+          {prospect.completed && (
+            <span className="absolute -top-2 -right-2 flex items-center gap-1 bg-success text-white text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded z-10">
+              <CheckCircle className="w-2.5 h-2.5" />
+              Complete
+            </span>
+          )}
+
           {/* Overdue badge */}
-          {overdue && (
+          {overdue && !prospect.completed && (
             <span className="absolute -top-2 -right-2 flex items-center gap-1 bg-danger text-white text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded z-10">
               <AlertCircle className="w-2.5 h-2.5" />
               Overdue

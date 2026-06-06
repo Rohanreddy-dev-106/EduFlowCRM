@@ -1,10 +1,18 @@
 import server from "./index.js";
 import * as Sentry from "@sentry/node";
+import { initializeScheduler, stopScheduler } from "./src/utils/scheduler.js";
 
 const PORT = Number(process.env.PORT) || 5000;
 
 server.listen(PORT, () => {
     console.log(`Server is Up and Running at PORT ${PORT}`);
+
+    // Initialize notification scheduler
+    if (process.env.ENABLE_NOTIFICATIONS !== "false") {
+        initializeScheduler();
+    } else {
+        console.log("[Scheduler] Notifications disabled via ENABLE_NOTIFICATIONS=false");
+    }
 });
 
 // Listen for server errors during startup/runtime
@@ -40,10 +48,12 @@ process.on("uncaughtException", (err) => {
 
 process.on("SIGINT", () => {
     console.log("Received SIGINT, shutting down gracefully...");
+    stopScheduler();
     process.exit(0);
 });
 
 process.on("SIGTERM", () => {
     console.log("Received SIGTERM, shutting down gracefully...");
+    stopScheduler();
     process.exit(0);
 });

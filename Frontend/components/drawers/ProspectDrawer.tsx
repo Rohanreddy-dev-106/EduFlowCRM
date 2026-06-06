@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   X, Mail, Phone, Building2, User, Tag, Calendar,
-  StickyNote, CheckSquare, Send, Clock, Trash2,
+  StickyNote, CheckSquare, Send, Clock, Trash2, CheckCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -31,7 +31,12 @@ export function ProspectDrawer({ open, prospect, canEdit = false, onClose, onUpd
   const [activeTab, setActiveTab] = useState<"details" | "checklist">("details");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [localProspect, setLocalProspect] = useState(prospect);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setLocalProspect(prospect);
+  }, [prospect]);
 
   useEffect(() => {
     if (!open) { setNoteText(""); setActiveTab("details"); setConfirmDelete(false); setNoteError(null); }
@@ -44,12 +49,22 @@ export function ProspectDrawer({ open, prospect, canEdit = false, onClose, onUpd
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  const handleCompletionChange = (completed: boolean) => {
+    if (localProspect) {
+      setLocalProspect({
+        ...localProspect,
+        completed,
+        completedAt: completed ? new Date().toISOString() : null,
+      });
+    }
+  };
+
   const handleAddNote = async () => {
-    if (!prospect || !noteText.trim()) return;
+    if (!localProspect || !noteText.trim()) return;
     setAddingNote(true);
     setNoteError(null);
     try {
-      await onAddNote(prospect.id, noteText.trim());
+      await onAddNote(localProspect.id, noteText.trim());
       setNoteText("");
     } catch {
       setNoteError("Failed to add note. Please try again.");
@@ -59,20 +74,20 @@ export function ProspectDrawer({ open, prospect, canEdit = false, onClose, onUpd
   };
 
   const handleDelete = async () => {
-    if (!prospect || !onDelete) return;
+    if (!localProspect || !onDelete) return;
     setDeleting(true);
     try {
-      await onDelete(prospect.id);
+      await onDelete(localProspect.id);
     } finally {
       setDeleting(false);
       setConfirmDelete(false);
     }
   };
 
-  if (!prospect) return null;
+  if (!localProspect) return null;
 
-  const stageConfig = STAGE_CONFIG[prospect.stage];
-  const isPilotClosed = prospect.stage === "PILOT_CLOSED";
+  const stageConfig = STAGE_CONFIG[localProspect.stage];
+  const isPilotClosed = localProspect.stage === "PILOT_CLOSED";
 
   return (
     <>
@@ -95,15 +110,21 @@ export function ProspectDrawer({ open, prospect, canEdit = false, onClose, onUpd
       >
         {/* Header */}
         <div className="flex items-start gap-3 px-5 py-4 border-b border-ink-5">
-          <Avatar name={prospect.name} size="lg" />
+          <Avatar name={localProspect.name} size="lg" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-semibold text-ink-1">{prospect.name}</h2>
-              <Badge variant="stage" stage={prospect.stage}>
+              <h2 className="text-lg font-semibold text-ink-1">{localProspect.name}</h2>
+              <Badge variant="stage" stage={localProspect.stage}>
                 {stageConfig.label}
               </Badge>
+              {localProspect.completed && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-success/10 border border-success/30">
+                  <CheckCircle className="w-3.5 h-3.5 text-success" />
+                  <span className="text-xs font-semibold text-success">Complete</span>
+                </div>
+              )}
             </div>
-            <p className="text-sm text-ink-4 mt-0.5">{prospect.role} · {prospect.school}</p>
+            <p className="text-sm text-ink-4 mt-0.5">{localProspect.role} · {localProspect.school}</p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             {canEdit && onDelete && (
@@ -174,11 +195,11 @@ export function ProspectDrawer({ open, prospect, canEdit = false, onClose, onUpd
                   Contact
                 </h3>
                 <div className="space-y-2.5">
-                  <InfoRow icon={<Mail className="w-4 h-4" />} label="Email" value={prospect.email} />
-                  <InfoRow icon={<Phone className="w-4 h-4" />} label="Phone" value={prospect.phone} />
-                  <InfoRow icon={<Building2 className="w-4 h-4" />} label="School" value={prospect.school} />
-                  <InfoRow icon={<User className="w-4 h-4" />} label="Role" value={prospect.role} />
-                  <InfoRow icon={<Tag className="w-4 h-4" />} label="Source" value={prospect.source} />
+                  <InfoRow icon={<Mail className="w-4 h-4" />} label="Email" value={localProspect.email} />
+                  <InfoRow icon={<Phone className="w-4 h-4" />} label="Phone" value={localProspect.phone} />
+                  <InfoRow icon={<Building2 className="w-4 h-4" />} label="School" value={localProspect.school} />
+                  <InfoRow icon={<User className="w-4 h-4" />} label="Role" value={localProspect.role} />
+                  <InfoRow icon={<Tag className="w-4 h-4" />} label="Source" value={localProspect.source} />
                 </div>
               </section>
 
@@ -191,7 +212,7 @@ export function ProspectDrawer({ open, prospect, canEdit = false, onClose, onUpd
                   <InfoRow
                     icon={<Clock className="w-4 h-4" />}
                     label="Last Contact"
-                    value={prospect.lastContactDate ? formatRelative(prospect.lastContactDate) : "Never"}
+                    value={localProspect.lastContactDate ? formatRelative(localProspect.lastContactDate) : "Never"}
                   />
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 text-ink-4 w-28 shrink-0">
@@ -201,17 +222,17 @@ export function ProspectDrawer({ open, prospect, canEdit = false, onClose, onUpd
                     {canEdit ? (
                       <input
                         type="date"
-                        defaultValue={prospect.nextFollowUpDate?.split("T")[0] ?? ""}
+                        defaultValue={localProspect.nextFollowUpDate?.split("T")[0] ?? ""}
                         onChange={async (e) => {
                           if (e.target.value) {
-                            await onUpdate(prospect.id, { nextFollowUpDate: new Date(e.target.value).toISOString() });
+                            await onUpdate(localProspect.id, { nextFollowUpDate: new Date(e.target.value).toISOString() });
                           }
                         }}
                         className="flex-1 bg-surface-3 border border-ink-5 rounded px-2.5 py-1.5 text-xs font-mono text-ink-1 focus:outline-none focus:border-brand-500"
                       />
                     ) : (
                       <span className="text-sm text-ink-2 truncate">
-                        {prospect.nextFollowUpDate ? formatDate(prospect.nextFollowUpDate) : "—"}
+                        {localProspect.nextFollowUpDate ? formatDate(localProspect.nextFollowUpDate) : "—"}
                       </span>
                     )}
                   </div>
@@ -274,9 +295,10 @@ export function ProspectDrawer({ open, prospect, canEdit = false, onClose, onUpd
             </div>
           ) : (
             <OnboardingChecklist
-              prospectId={prospect.id}
-              items={prospect.checklistItems ?? []}
+              prospectId={localProspect.id}
+              items={localProspect.checklistItems ?? []}
               canEdit={canEdit}
+              onCompletionChange={handleCompletionChange}
             />
           )}
         </div>

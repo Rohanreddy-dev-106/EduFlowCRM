@@ -41,6 +41,8 @@ export interface Prospect {
   stage: Stage;
   lastContactDate: string | null;
   nextFollowUpDate: string | null;
+  completed: boolean;
+  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
   notes?: ProspectNote[];
@@ -81,4 +83,21 @@ export interface AnalyticsData {
   closedThisMonth: number;
   closedCount: number;
   monthlyTrend: { year: number; month: number; count: number }[];
+}
+
+export type NotificationType =
+  | "overdue_prospects"
+  | "milestone"
+  | "alert"
+  | "notification";
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  metadata?: Record<string, any>;
+  read: boolean;
+  createdAt: string;
 }
