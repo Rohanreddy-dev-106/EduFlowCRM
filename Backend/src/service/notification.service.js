@@ -12,12 +12,18 @@ export const checkAndNotifyOverdueProspects = async () => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Find all overdue prospects (active ones only) and include owner if set
+    const cooldownHours = Number(process.env.NOTIFICATION_COOLDOWN_HOURS || 24);
+    const cooldownMs = cooldownHours * 60 * 60 * 1000;
+    const cutoff = new Date(now.getTime() - cooldownMs);
+
+    // Find all overdue prospects (active ones only) and include owner if set.
+    // Cooldown prevents resending overdue emails repeatedly.
     const overdueProspects = await prisma.prospect.findMany({
       where: {
         deletedAt: null,
         stage: { not: "Pilot Closed" },
         nextFollowUpDate: { lt: startOfToday },
+        OR: [{ lastNotifiedAt: null }, { lastNotifiedAt: { lt: cutoff } }],
       },
       select: {
         id: true,
@@ -86,6 +92,13 @@ export const checkAndNotifyOverdueProspects = async () => {
                   read: false,
                 },
               });
+
+              // Update cooldown marker for ALL prospects included in this email
+              await prisma.prospect.updateMany({
+                where: { id: { in: prospects.map((p) => p.id) } },
+                data: { lastNotifiedAt: new Date() },
+              });
+
               sentCount++;
             } else {
               failedCount++;
@@ -115,6 +128,13 @@ export const checkAndNotifyOverdueProspects = async () => {
                     read: false,
                   },
                 });
+
+                // Update cooldown marker for ALL prospects included in this email
+                await prisma.prospect.updateMany({
+                  where: { id: { in: prospects.map((p) => p.id) } },
+                  data: { lastNotifiedAt: new Date() },
+                });
+
                 sentCount++;
               } else {
                 failedCount++;
@@ -139,6 +159,13 @@ export const checkAndNotifyOverdueProspects = async () => {
                   read: false,
                 },
               });
+
+              // Update cooldown marker for ALL prospects included in this email
+              await prisma.prospect.updateMany({
+                where: { id: { in: prospects.map((p) => p.id) } },
+                data: { lastNotifiedAt: new Date() },
+              });
+
               sentCount++;
             } else {
               failedCount++;
