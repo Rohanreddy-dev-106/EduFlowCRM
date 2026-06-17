@@ -1,14 +1,5 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { config as loadEnv } from "dotenv";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { PrismaClient } from "@prisma/client";
-
-const envPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../Backend/.env");
-
-if (!process.env.DATABASE_URL) {
-  loadEnv({ path: envPath });
-}
 
 const databaseUrl = process.env.DATABASE_URL;
 

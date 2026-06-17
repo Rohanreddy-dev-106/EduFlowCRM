@@ -90,7 +90,7 @@ npm install
 
 ### 2. Configure environment
 ```bash
-echo "NEXT_PUBLIC_BACKEND_URL=http://localhost:5000" > .env.local
+echo "NEXT_PUBLIC_API_URL=https://eduflowcrm.onrender.com" > .env.local
 # Edit .env.local if your backend runs on a different port
 ```
 
