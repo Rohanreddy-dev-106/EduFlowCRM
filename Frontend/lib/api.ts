@@ -7,10 +7,10 @@ function cleanEnvUrl(value: string | undefined) {
 const BACKEND_URL =
   process.env.NODE_ENV === "development"
     ? "http://localhost:5000"
-    : cleanEnvUrl(process.env.NEXT_PUBLIC_BACKEND_URL) ||
+    : cleanEnvUrl(process.env.NEXT_PUBLIC_API_URL) ||
+      cleanEnvUrl(process.env.NEXT_PUBLIC_BACKEND_URL) ||
       cleanEnvUrl(process.env.BACKEND_URL) ||
-      cleanEnvUrl(process.env.NEXT_PUBLIC_API_URL) ||
-      "http://localhost:5000";
+      "https://eduflowcrm.onrender.com";
 const NORMALIZED_BACKEND_URL = BACKEND_URL.replace(/\/+$/, "");
 
 // ─── Stage Mapping ───────────────────────────────────────────────
