@@ -20,6 +20,14 @@ const url = new URL(connectionString);
 const allowPublicKeyRetrieval =
     (process.env.MARIADB_ALLOW_PUBLIC_KEY_RETRIEVAL ?? "true").toLowerCase() === "true";
 const cachingRsaPublicKey = process.env.MARIADB_CACHING_RSA_PUBLIC_KEY?.trim() || undefined;
+const sslMode = url.searchParams.get("ssl-mode")?.toUpperCase();
+const sslAccept = url.searchParams.get("sslaccept")?.toLowerCase();
+const useSsl =
+    process.env.MARIADB_SSL?.toLowerCase() === "true" ||
+    sslMode === "REQUIRED" ||
+    sslMode === "VERIFY_CA" ||
+    sslMode === "VERIFY_IDENTITY" ||
+    sslAccept === "strict";
 
 const adapter = new PrismaMariaDb({
     host: url.hostname,
@@ -29,6 +37,7 @@ const adapter = new PrismaMariaDb({
     database: url.pathname.replace(/^\//, ""),
     connectionLimit: 5,
     allowPublicKeyRetrieval,
+    ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
     ...(cachingRsaPublicKey ? { cachingRsaPublicKey } : {})
 });
 

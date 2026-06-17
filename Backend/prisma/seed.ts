@@ -23,7 +23,7 @@ const seedProspects = [
         phone: "+1-555-0101",
         source: "Conference",
         stage: "Cold"
-    },solution for 
+    },
     {
         name: "Bright Future Academy",
         school: "Bright Future Academy",
