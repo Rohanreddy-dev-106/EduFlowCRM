@@ -21,10 +21,15 @@ if (process.env.SENTRY_DSN) {
 }
 
 const server = express();
-const allowedOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || "http://localhost:3000")
+const envOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+const allowedOrigins = [
+    "http://localhost:3000",
+    "https://crm-full-stack.vercel.app",
+    ...envOrigins,
+];
 
 // Sentry request handler middleware (if enabled)
 if (process.env.SENTRY_DSN) {
@@ -43,7 +48,7 @@ server.use((req, res, next) => {
 // ─── Core Middleware ─────────────────────────────────────────────
 server.use(
     cors({
-        origin: allowedOrigins,
+        origin: Array.from(new Set(allowedOrigins)),
         credentials: true,
     })
 );
