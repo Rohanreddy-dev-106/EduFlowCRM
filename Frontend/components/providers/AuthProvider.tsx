@@ -3,6 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { Role } from "@/lib/roles";
+import { readBackendResponse } from "@/lib/api";
 
 interface User {
   id: string;
@@ -44,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch("/api/auth/me");
       if (res.ok) {
-        const data = await res.json();
+        const data = await readBackendResponse(res);
         setUser(data.user);
       } else {
         setUser(null);
@@ -63,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await res.json();
+    const data = await readBackendResponse(res);
 
     if (!res.ok) {
       throw new Error(data.error || "Login failed");
@@ -80,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify({ name, email, password, role }),
     });
 
-    const data = await res.json();
+    const data = await readBackendResponse(res);
 
     if (!res.ok) {
       throw new Error(data.error || "Registration failed");
