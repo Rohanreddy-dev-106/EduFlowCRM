@@ -9,6 +9,25 @@ const stageSchema = z.enum([
     "Pilot Closed"
 ]);
 
+const optionalTextSchema = z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((value) => {
+        if (value === undefined) return undefined;
+        if (value === null) return null;
+        const trimmed = value.trim();
+        return trimmed.length ? trimmed : null;
+    });
+
+const optionalEmailSchema = z
+    .union([z.string(), z.null(), z.undefined()])
+    .transform((value) => {
+        if (value === undefined) return undefined;
+        if (value === null) return null;
+        const trimmed = value.trim();
+        return trimmed.length ? trimmed : null;
+    })
+    .refine((email) => email === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), "Invalid email");
+
 export const paginationQuerySchema = z.object({
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(10)
@@ -25,10 +44,10 @@ export const cardIdParamSchema = z.object({
 export const createCardBodySchema = z.object({
     name: z.string().trim().min(1, "name is required"),
     school: z.string().trim().min(1, "school is required"),
-    role: z.string().trim().optional(),
-    email: z.string().trim().email("Invalid email").optional(),
-    phone: z.string().trim().optional(),
-    source: z.string().trim().optional(),
+    role: optionalTextSchema.optional(),
+    email: optionalEmailSchema.optional(),
+    phone: optionalTextSchema.optional(),
+    source: optionalTextSchema.optional(),
     stage: stageSchema.optional(),
     lastContactDate: z.union([z.string().trim(), z.null()]).optional(),
     nextFollowUpDate: z.union([z.string().trim(), z.null()]).optional()

@@ -36,7 +36,13 @@ export function AddProspectModal({ open, onClose, onCreate }: AddProspectModalPr
     setError(null);
     try {
       await onCreate({
-        ...form,
+        name: form.name.trim(),
+        school: form.school.trim(),
+        role: form.role.trim() || "",
+        email: form.email.trim() || "",
+        phone: form.phone.trim() || "",
+        source: form.source,
+        stage: form.stage,
         lastContactDate: null,
         nextFollowUpDate: null,
       });

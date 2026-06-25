@@ -141,73 +141,6 @@ const overdueProspects = [
   },
 ];
 
-const kanbanColumns = [
-  {
-    title: "Contacted",
-    count: "04",
-    tone: "from-[#eef7f6] via-[#f7fbfa] to-[#f8fbfc]",
-    accent: "bg-[#0a8aa8]",
-    ring: "border-[#b8ddd9]",
-    cards: [
-      {
-        title: "Northwind Academy",
-        note: "Follow-up check synced",
-        status: "DUE TODAY",
-        badge: "text-[#0a8aa8]",
-      },
-      {
-        title: "Harborview School",
-        note: "Needs a short call recap",
-        status: "OVERDUE",
-        badge: "text-[#9b6230]",
-      },
-    ],
-  },
-  {
-    title: "Demo Done",
-    count: "03",
-    tone: "from-[#fbf6ee] via-[#fffaf4] to-[#fdfbf7]",
-    accent: "bg-[#8b6f4d]",
-    ring: "border-[#e0cfb6]",
-    cards: [
-      {
-        title: "Cedar Grove School",
-        note: "Follow-up check synced",
-        status: "COMPLETE",
-        badge: "text-[#2b6f63]",
-      },
-      {
-        title: "Summit Charter",
-        note: "Waiting on stakeholder notes",
-        status: "DUE TODAY",
-        badge: "text-[#0a8aa8]",
-      },
-    ],
-  },
-  {
-    title: "Pilot Closed",
-    count: "02",
-    tone: "from-[#eef3eb] via-[#f8fbf3] to-[#fafdf7]",
-    accent: "bg-[#2b6f63]",
-    ring: "border-[#d9e5d6]",
-    cards: [
-      {
-        title: "Juniper Hill Prep",
-        note: "Follow-up check synced",
-        status: "COMPLETE",
-        badge: "text-[#0d6b5a]",
-      },
-      {
-        title: "Riverbend Academy",
-        note: "Contract and kickoff aligned",
-        status: "COMPLETE",
-        badge: "text-[#2b6f63]",
-      },
-    ],
-  },
-];
-
-
 const kpis = [
   { value: 128, label: "Total prospects", trend: "+18% this month" },
   { value: 34, label: "Conversion rate", trend: "+4 pts vs last month", suffix: "%" },
@@ -247,7 +180,7 @@ function SectionHeading({
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#0a8aa8] dark:text-cyan-300">
         {eyebrow}
       </p>
-      <h2 className="mt-3 font-display text-3xl leading-[1.05] tracking-tight text-[#1f1812] dark:text-[#f5f7fb] sm:text-4xl lg:text-5xl">
+      <h2 className="mt-3 font-sans text-3xl leading-[1.05] tracking-tight text-[#1f1812] dark:text-[#f5f7fb] sm:text-4xl lg:text-5xl">
         {title}
       </h2>
       <p className="mt-4 max-w-2xl text-base leading-8 text-[#615445] dark:text-slate-300 sm:text-lg">
@@ -328,10 +261,9 @@ export function EduFlowLandingPage() {
                 <GraduationCap className="h-5 w-5" />
               </span>
               <span className="leading-tight">
-                <span className="block font-display text-xl tracking-tight text-[#1f1812] dark:text-[#f5f7fb]">
+                <span className="block font-sans text-xl tracking-tight text-[#1f1812] dark:text-[#f5f7fb]">
                   EduFlow CRM
                 </span>
-                
               </span>
             </Link>
 
@@ -371,9 +303,9 @@ export function EduFlowLandingPage() {
           initial={reduceMotion ? false : "hidden"}
           whileInView={reduceMotion ? undefined : "show"}
           viewport={{ once: true, amount: 0.28 }}
-          className="grid items-center gap-12 pb-20 pt-6 lg:grid-cols-[1.02fr_0.98fr] lg:pb-24 lg:pt-10"
+          className="flex flex-col items-center pb-20 pt-6 text-center lg:pb-24 lg:pt-10"
         >
-          <div className="relative">
+          <div className="relative max-w-3xl w-full">
             <motion.div
               variants={staggerItem}
               className="inline-flex items-center gap-2 rounded-full border border-[#d8c7aa] bg-[#fbf7ef] px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.26em] text-[#6d5e4e] shadow-[0_8px_26px_rgba(87,67,41,0.07)] transition-colors duration-300 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:shadow-[0_8px_26px_rgba(0,0,0,0.24)]"
@@ -384,21 +316,21 @@ export function EduFlowLandingPage() {
 
             <motion.h1
               variants={staggerItem}
-              className="mt-6 max-w-2xl font-display text-5xl leading-[0.95] tracking-tight text-[#1f1812] transition-colors duration-300 dark:text-[#f5f7fb] sm:text-6xl lg:text-[5.2rem]"
+              className="mt-6 font-sans text-4xl leading-[1.05] tracking-tight text-[#1f1812] transition-colors duration-300 dark:text-[#f5f7fb] sm:text-6xl lg:text-[5.2rem]"
             >
               Move every school from cold lead to pilot close.
             </motion.h1>
 
             <motion.p
               variants={staggerItem}
-              className="mt-6 max-w-2xl text-lg leading-8 text-[#615445] transition-colors duration-300 dark:text-slate-300 sm:text-xl"
+              className="mt-6 mx-auto max-w-2xl text-lg leading-8 text-[#615445] transition-colors duration-300 dark:text-slate-300 sm:text-xl"
             >
               EduFlow CRM helps sales agents, managers, and admins track prospects,
               automate follow-ups, manage onboarding checklists, and read the
               pipeline with calm, useful analytics.
             </motion.p>
 
-            <motion.div variants={staggerItem} className="mt-8 flex flex-wrap gap-3">
+            <motion.div variants={staggerItem} className="mt-8 flex flex-wrap justify-center gap-3">
               <Link
                 href="/register"
                 className="inline-flex items-center gap-2 rounded-full bg-[#0a8aa8] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_34px_rgba(10,138,168,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#097d99] dark:bg-cyan-500 dark:text-[#081015] dark:hover:bg-cyan-400"
@@ -435,134 +367,6 @@ export function EduFlowLandingPage() {
               ))}
             </motion.div>
           </div>
-
-          <div className="relative">
-            <div className="absolute -left-8 top-8 h-24 w-24 rounded-full bg-[#0a8aa8]/10 blur-2xl" />
-            <div className="absolute right-0 top-1/4 h-36 w-36 rounded-full bg-[#d5ecf2]/80 blur-3xl" />
-
-            <motion.div
-              initial={reduceMotion ? false : { y: 0, rotate: 0 }}
-              animate={reduceMotion ? {} : { y: [0, -12, 0], rotate: [0, 0.4, 0] }}
-              transition={
-                reduceMotion
-                  ? undefined
-                  : { duration: 7, repeat: Infinity, ease: "easeInOut" }
-              }
-              className="relative overflow-hidden rounded-[2rem] border border-[#d9c9b0] bg-[#fffaf2]/95 p-4 shadow-[0_28px_80px_rgba(72,54,32,0.14)] backdrop-blur-sm transition-colors duration-300 dark:border-white/10 dark:bg-[#0f1218]/95 dark:shadow-[0_28px_80px_rgba(0,0,0,0.35)] sm:p-5 lg:p-6"
-            >
-              <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,rgba(10,138,168,0.95),rgba(43,111,99,0.8),rgba(155,98,48,0.75))]" />
-
-              <div className="border-b border-[#eadfce] pb-4 dark:border-white/10 sm:pb-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7c6b58] dark:text-slate-400">
-                      Live preview
-                    </p>
-                    <h2 className="mt-2 font-display text-[clamp(1.7rem,3vw,2.45rem)] leading-[0.98] tracking-tight text-[#1f1812] dark:text-[#f5f7fb]">
-                      Kanban board preview
-                    </h2>
-                    <p className="mt-2 max-w-xl text-sm leading-7 text-[#6a5a49] dark:text-slate-400 sm:text-[0.95rem]">
-                      A compact snapshot of the pipeline with stage summaries, status tags, and quick signals.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 sm:justify-end">
-                    <div className="rounded-full border border-[#cfe8e5] bg-[#e8f6f4] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#0a8aa8] dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300">
-                      3 columns
-                    </div>
-                    <div className="rounded-full border border-[#e5dacb] bg-[#fffdf8] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7a6a59] dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
-                      Synced live
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                  {[
-                    ["12", "Prospects moving"],
-                    ["3", "Active stages"],
-                    ["9 AM", "Auto checks"],
-                  ].map(([value, label]) => (
-                    <div
-                      key={label}
-                      className="rounded-2xl border border-[#eadfce] bg-[#fffdf8] px-3 py-2.5 text-left dark:border-white/10 dark:bg-white/5"
-                    >
-                      <p className="text-lg font-semibold text-[#1f1812] dark:text-[#f5f7fb]">{value}</p>
-                      <p className="mt-1 text-xs text-[#7a6a59] dark:text-slate-400">{label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {kanbanColumns.map((column) => (
-                  <div
-                    key={column.title}
-                    className={cn(
-                      "min-w-0 rounded-[1.6rem] border p-4 shadow-[0_10px_24px_rgba(72,54,32,0.05)] transition-all duration-300 hover:-translate-y-0.5 dark:shadow-[0_10px_24px_rgba(0,0,0,0.16)]",
-                      column.ring,
-                      `bg-gradient-to-br ${column.tone}`
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3 border-b border-[#e4d7c3] pb-3 dark:border-white/10">
-                      <div className="min-w-0 pr-2">
-                        <p className="break-words text-base font-semibold text-[#2d2318] dark:text-[#f5f7fb]">
-                          {column.title}
-                        </p>
-                        <p className="text-xs text-[#7a6a59] dark:text-slate-400">{column.count} prospects</p>
-                      </div>
-                      <span className={cn("mt-1 h-2.5 w-2.5 rounded-full", column.accent)} />
-                    </div>
-
-                    <div className="mt-3 space-y-2">
-                      {column.cards.map((card) => (
-                        <div
-                          key={card.title}
-                          className="min-w-0 rounded-[1.15rem] border border-[#e5dacb] bg-[#fffdf8]/92 p-3 shadow-[0_8px_18px_rgba(72,54,32,0.05)] transition-all duration-200 hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/5 dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)]"
-                        >
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                            <div className="min-w-0 flex-1 pr-0 sm:pr-2">
-                              <p className="text-sm font-semibold leading-tight text-[#1f1812] dark:text-[#f5f7fb] sm:text-[0.95rem]">
-                                {card.title}
-                              </p>
-                              <p className="mt-1 text-xs leading-snug text-[#7a6a59] dark:text-slate-400">
-                                {card.note}
-                              </p>
-                            </div>
-                            <span
-                              className={cn(
-                                "self-start shrink-0 rounded-full border border-current/20 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] sm:mt-0 sm:text-[10px] sm:tracking-[0.22em]",
-                                card.badge
-                              )}
-                            >
-                              {card.status}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {[
-                  ["DUE TODAY", "2 schools need follow-up"],
-                  ["OVERDUE", "1 account is past SLA"],
-                  ["COMPLETE", "3 tasks closed this morning"],
-                ].map(([tag, text]) => (
-                  <div
-                    key={tag}
-                    className="min-w-0 rounded-2xl border border-[#e4d7c3] bg-[#fffaf2] p-3 transition-all duration-300 hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/5"
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#0a8aa8] dark:text-cyan-300">
-                      {tag}
-                    </p>
-                    <p className="mt-2 text-sm leading-snug text-[#5f5142] dark:text-slate-300">{text}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
         </motion.section>
 
         <motion.section
@@ -593,7 +397,7 @@ export function EduFlowLandingPage() {
                   </span>
                   <span className="text-sm font-medium text-[#0a8aa8] dark:text-cyan-300">{step.number}</span>
                 </div>
-                <h3 className="mt-3 font-display text-2xl tracking-tight text-[#1f1812] dark:text-[#f5f7fb]">
+                <h3 className="mt-3 font-sans text-2xl tracking-tight text-[#1f1812] dark:text-[#f5f7fb]">
                   {step.title}
                 </h3>
                 <p className="mt-3 text-sm leading-7 text-[#665949] dark:text-slate-300">{step.description}</p>
@@ -656,7 +460,7 @@ export function EduFlowLandingPage() {
                     <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#7c6b58] dark:text-slate-400">
                       9:00 AM digest
                     </p>
-                    <h3 className="mt-2 font-display text-2xl tracking-tight text-[#1f1812] dark:text-[#f5f7fb]">
+                    <h3 className="mt-2 font-sans text-2xl tracking-tight text-[#1f1812] dark:text-[#f5f7fb]">
                       Overdue prospects, ready to action.
                     </h3>
                   </div>
@@ -758,7 +562,7 @@ export function EduFlowLandingPage() {
                 className="rounded-[1.5rem] border border-[#ded2bf] bg-[#fbf7ef] p-5 shadow-[0_12px_30px_rgba(72,54,32,0.06)] transition-colors duration-300 dark:border-white/10 dark:bg-white/5 dark:shadow-[0_12px_30px_rgba(0,0,0,0.18)]"
               >
                 <p className="text-sm text-[#6d5e4e] dark:text-slate-400">{kpi.label}</p>
-                <p className="mt-4 font-display text-5xl tracking-tight text-[#1f1812] dark:text-[#f5f7fb]">
+                <p className="mt-4 font-sans text-5xl tracking-tight text-[#1f1812] dark:text-[#f5f7fb]">
                   <CountUp value={kpi.value} suffix={kpi.suffix} />
                 </p>
                 <p className="mt-3 text-sm font-medium text-[#0a8aa8] dark:text-cyan-300">{kpi.trend}</p>
@@ -778,7 +582,7 @@ export function EduFlowLandingPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#0a8aa8] dark:text-cyan-300">
               START HERE
             </p>
-            <h2 className="mx-auto mt-4 max-w-3xl font-display text-4xl leading-tight tracking-tight text-[#1f1812] dark:text-[#f5f7fb] sm:text-5xl">
+            <h2 className="mx-auto mt-4 max-w-3xl font-sans text-4xl leading-tight tracking-tight text-[#1f1812] dark:text-[#f5f7fb] sm:text-5xl">
               Turn scattered leads into a pipeline you can actually run.
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-[#615445] dark:text-slate-300 sm:text-lg">
@@ -808,7 +612,7 @@ export function EduFlowLandingPage() {
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#b8ddd9] bg-[#e7f5f3] text-[#0a8aa8] dark:border-cyan-500/20 dark:bg-cyan-500/10 dark:text-cyan-300">
               <GraduationCap className="h-5 w-5" />
             </span>
-            <span className="font-display text-2xl tracking-tight">EduFlow CRM</span>
+            <span className="font-sans text-2xl tracking-tight">EduFlow CRM</span>
           </Link>
 
           <nav className="flex flex-wrap items-center gap-4 text-[#615445] dark:text-slate-400">
@@ -824,8 +628,7 @@ export function EduFlowLandingPage() {
           </nav>
 
           <p className="max-w-sm text-[#6d5e4e] dark:text-slate-400">
-            Warm, elegant CRM software for EdTech teams that want the process to
-            feel human.
+             @2026 Eduflow. All rights reserve. Intern Work by FS-5
           </p>
         </footer>
       </div>
