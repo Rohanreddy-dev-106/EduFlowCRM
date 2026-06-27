@@ -1,17 +1,15 @@
 "use client";
 
-import { AlertTriangle, CalendarClock, Users } from "lucide-react";
+import { AlertTriangle, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KanbanHeaderProps {
   overdueCount: number;
-  dueTodayCount: number;
   totalCount: number;
 }
 
 export function KanbanHeader({
   overdueCount,
-  dueTodayCount,
   totalCount,
 }: KanbanHeaderProps) {
   return (
@@ -34,15 +32,6 @@ export function KanbanHeader({
           {overdueCount} overdue
         </button>
 
-        <button
-          className={cn(
-            "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-mono font-semibold transition-colors",
-            dueTodayCount > 0 ? "bg-warning-muted text-warning hover:bg-warning/20" : "text-ink-4 hover:text-ink-3"
-          )}
-        >
-          <CalendarClock className="h-3.5 w-3.5" />
-          {dueTodayCount} due today
-        </button>
       </div>
     </div>
   );

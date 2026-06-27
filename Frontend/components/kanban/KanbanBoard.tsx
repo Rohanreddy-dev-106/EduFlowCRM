@@ -9,7 +9,7 @@ import { useDrawer } from "@/hooks/useDrawer";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { STAGE_ORDER, type Stage, type Prospect } from "@/types";
 import type { ProspectNote } from "@/types";
-import { isOverdue, isDueToday } from "@/lib/utils";
+import { isOverdue } from "@/lib/utils";
 import { PROSPECT_EDIT_ROLES, hasRoleAccess } from "@/lib/roles";
 
 interface KanbanBoardProps {
@@ -70,11 +70,6 @@ export function KanbanBoard({
     () => prospects.filter((p) => p.stage !== "PILOT_CLOSED" && isOverdue(p.nextFollowUpDate)),
     [prospects]
   );
-  const dueTodayProspects = useMemo(
-    () => prospects.filter((p) => p.stage !== "PILOT_CLOSED" && isDueToday(p.nextFollowUpDate)),
-    [prospects]
-  );
-
   const handleCardClick = (prospect: Prospect) => {
     const latest = prospects.find((p) => p.id === prospect.id) ?? prospect;
     openDrawer(latest);
@@ -117,7 +112,6 @@ export function KanbanBoard({
       <div className="flex min-h-0 flex-1 flex-col">
         <KanbanHeader
           overdueCount={overdueProspects.length}
-          dueTodayCount={dueTodayProspects.length}
           totalCount={prospects.length}
         />
 
