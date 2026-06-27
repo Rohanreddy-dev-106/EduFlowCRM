@@ -17,6 +17,8 @@ type NotificationsResponse = {
   success: boolean;
   data?: NotificationItem[];
   unreadCount?: number;
+  error?: string;
+  message?: string;
 };
 
 export function useNotifications() {
