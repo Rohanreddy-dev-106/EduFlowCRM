@@ -3,7 +3,6 @@ import {
   markNotificationAsRead,
   getUnreadCount,
   checkAndNotifyOverdueProspects,
-  syncBellNotificationsForUser,
 } from "../service/notification.service.js";
 
 /**
@@ -13,7 +12,6 @@ export const getNotifications = async (req, res, next) => {
   try {
     const userId = req.user.id;
 
-    await syncBellNotificationsForUser(req.user);
     const notifications = await getUserNotifications(userId);
     const unreadCount = await getUnreadCount(userId);
 
@@ -33,7 +31,6 @@ export const getNotifications = async (req, res, next) => {
 export const getUnreadCountEndpoint = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    await syncBellNotificationsForUser(req.user);
     const count = await getUnreadCount(userId);
 
     res.json({

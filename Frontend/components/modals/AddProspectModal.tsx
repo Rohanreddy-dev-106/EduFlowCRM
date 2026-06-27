@@ -24,6 +24,7 @@ export function AddProspectModal({ open, onClose, onCreate }: AddProspectModalPr
     phone: "",
     source: "Direct",
     stage: "COLD" as Stage,
+    nextFollowUpDate: "",
     completed: false,
     completedAt: null as string | null,
   });
@@ -46,7 +47,7 @@ export function AddProspectModal({ open, onClose, onCreate }: AddProspectModalPr
         completed: form.completed,
         completedAt: form.completedAt,
         lastContactDate: null,
-        nextFollowUpDate: null,
+        nextFollowUpDate: form.nextFollowUpDate || null,
       });
       setForm({
         name: "",
@@ -56,6 +57,7 @@ export function AddProspectModal({ open, onClose, onCreate }: AddProspectModalPr
         phone: "",
         source: "Direct",
         stage: "COLD",
+        nextFollowUpDate: "",
         completed: false,
         completedAt: null,
       });
@@ -190,6 +192,19 @@ export function AddProspectModal({ open, onClose, onCreate }: AddProspectModalPr
                   <option value="Social Media">Social Media</option>
                 </select>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="font-mono text-xs font-medium uppercase tracking-wider text-ink-3">
+                Follow-up Date
+              </label>
+              <input
+                type="date"
+                value={form.nextFollowUpDate}
+                onChange={(e) => updateField("nextFollowUpDate", e.target.value)}
+                className="w-full rounded-lg border border-ink-5 bg-surface-3 px-3 py-2.5 text-sm text-ink-1 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+              />
+              <p className="text-[11px] text-ink-4">Optional, but recommended for overdue tracking.</p>
             </div>
 
             <div className="flex flex-col gap-1.5">

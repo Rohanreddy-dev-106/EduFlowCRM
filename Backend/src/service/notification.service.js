@@ -285,7 +285,6 @@ export const getUserNotifications = async (userId) => {
     const notifications = await prisma.notificationLog.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      take: 50,
     });
 
     return notifications;
@@ -396,7 +395,6 @@ export const syncBellNotificationsForUser = async (user) => {
             title,
             message,
             metadata,
-            read: false,
           },
         });
       }
