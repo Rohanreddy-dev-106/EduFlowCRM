@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Bell, Users } from "lucide-react";
+import { AlertTriangle, CalendarClock, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn, formatDate } from "@/lib/utils";
 import type { Prospect } from "@/types";
@@ -53,7 +53,7 @@ export function KanbanHeader({
             dueTodayCount > 0 ? "bg-warning-muted text-warning hover:bg-warning/20" : "text-ink-4 hover:text-ink-3"
           )}
         >
-          <Bell className="h-3.5 w-3.5" />
+          <CalendarClock className="h-3.5 w-3.5" />
           {dueTodayCount} due today
         </button>
       </div>
