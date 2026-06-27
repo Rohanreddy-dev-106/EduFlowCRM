@@ -20,6 +20,12 @@ function getNotificationTone(type: string) {
   switch (type) {
     case "overdue_prospects":
       return { label: "O", color: "bg-red-100 text-red-600" };
+    case "due_today":
+      return { label: "T", color: "bg-amber-100 text-amber-700" };
+    case "prospect_updated":
+      return { label: "U", color: "bg-blue-100 text-blue-700" };
+    case "prospect_created":
+      return { label: "+", color: "bg-emerald-100 text-emerald-700" };
     case "milestone":
       return { label: "M", color: "bg-green-100 text-green-600" };
     case "alert":

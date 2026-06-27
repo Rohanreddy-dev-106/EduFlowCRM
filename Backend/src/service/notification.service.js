@@ -4,58 +4,152 @@ import {
   sendProspectOverdueReminderEmail,
 } from "./email.service.js";
 
-/**
- * Check for overdue prospects and send notifications to all users
- * @returns {Promise<object>} Summary of notifications sent
- */
+const startOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+export const getAdminUsers = async (client = prisma) => {
+  return client.user.findMany({
+    where: { role: "admin" },
+    select: { id: true, email: true, name: true, role: true },
+  });
+};
+
+export const createNotificationLogs = async (client, recipients, payload) => {
+  const uniqueRecipients = [...new Map(recipients.filter(Boolean).map((user) => [user.id, user])).values()];
+  if (uniqueRecipients.length === 0) return [];
+
+  return Promise.all(
+    uniqueRecipients.map((user) =>
+      client.notificationLog.create({
+        data: {
+          userId: user.id,
+          type: payload.type,
+          title: payload.title,
+          message: payload.message,
+          metadata: payload.metadata ?? undefined,
+          read: false,
+        },
+      })
+    )
+  );
+};
+
+export const getProspectNotificationRecipients = async (client, prospect, actorUser) => {
+  const recipients = [];
+  const seen = new Set();
+
+  const addRecipient = (user) => {
+    if (!user?.id || seen.has(user.id)) return;
+    seen.add(user.id);
+    recipients.push(user);
+  };
+
+  addRecipient(actorUser);
+
+  if (prospect?.owner) {
+    addRecipient(prospect.owner);
+  } else {
+    const admins = await getAdminUsers(client);
+    admins.forEach(addRecipient);
+  }
+
+  return recipients;
+};
+
+const formatFieldLabel = (field) => {
+  const labels = {
+    name: "name",
+    school: "school",
+    role: "role",
+    email: "email",
+    phone: "phone",
+    source: "source",
+    stage: "stage",
+    lastContactDate: "last contact date",
+    nextFollowUpDate: "follow-up date",
+    completed: "completion status",
+    completedAt: "completion time",
+  };
+  return labels[field] || field;
+};
+
+const formatDateValue = (value) => {
+  if (!value) return "cleared";
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString();
+};
+
+const describeChange = (field, before, after) => {
+  if (field === "lastContactDate" || field === "nextFollowUpDate" || field === "completedAt") {
+    return `${formatFieldLabel(field)} changed from ${formatDateValue(before)} to ${formatDateValue(after)}`;
+  }
+
+  return `${formatFieldLabel(field)} changed from "${before ?? "empty"}" to "${after ?? "empty"}"`;
+};
+
+const valuesEqual = (field, before, after) => {
+  if (field === "lastContactDate" || field === "nextFollowUpDate" || field === "completedAt") {
+    const beforeTime = before ? new Date(before).getTime() : null;
+    const afterTime = after ? new Date(after).getTime() : null;
+    return beforeTime === afterTime;
+  }
+
+  return before === after;
+};
+
 export const checkAndNotifyOverdueProspects = async () => {
   try {
     console.log("[Notification Service] Starting overdue prospect check...");
 
     const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = startOfDay(now);
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
     const cooldownHours = Number(process.env.NOTIFICATION_COOLDOWN_HOURS || 24);
     const cooldownMs = cooldownHours * 60 * 60 * 1000;
     const cutoff = new Date(now.getTime() - cooldownMs);
 
-    // Find all overdue prospects (active ones only) and include owner if set.
-    // Cooldown prevents resending overdue emails repeatedly.
+    const baseSelect = {
+      id: true,
+      name: true,
+      school: true,
+      stage: true,
+      email: true,
+      nextFollowUpDate: true,
+      ownerId: true,
+      owner: { select: { id: true, email: true, name: true, role: true } },
+    };
+
     const overdueProspects = await prisma.prospect.findMany({
       where: {
         deletedAt: null,
         stage: { not: "Pilot Closed" },
-        nextFollowUpDate: { lt: startOfToday },
+        nextFollowUpDate: { lt: todayStart },
         OR: [{ lastNotifiedAt: null }, { lastNotifiedAt: { lt: cutoff } }],
       },
-      select: {
-        id: true,
-        name: true,
-        school: true,
-        stage: true,
-        email: true,
-        nextFollowUpDate: true,
-        ownerId: true,
-        owner: { select: { id: true, email: true, name: true, role: true } },
-      },
+      select: baseSelect,
     });
 
-    if (overdueProspects.length === 0) {
-      console.log("[Notification Service] No overdue prospects found.");
-      return { success: true, count: 0, message: "No overdue prospects" };
-    }
-
-    console.log(`[Notification Service] Found ${overdueProspects.length} overdue prospect(s)`);
+    const dueTodayProspects = await prisma.prospect.findMany({
+      where: {
+        deletedAt: null,
+        stage: { not: "Pilot Closed" },
+        nextFollowUpDate: {
+          gte: todayStart,
+          lt: tomorrowStart,
+        },
+      },
+      select: baseSelect,
+    });
 
     let prospectEmailsSent = 0;
     let prospectEmailsFailed = 0;
-    const prospectIdsToMarkNotified = new Set();
+    let internalNotificationsSent = 0;
+    let internalNotificationsFailed = 0;
 
     const markProspectsAsNotified = async (prospectIds) => {
       const uniqueIds = [...new Set(prospectIds)].filter(Boolean);
-      if (uniqueIds.length === 0) {
-        return;
-      }
+      if (uniqueIds.length === 0) return;
 
       await prisma.prospect.updateMany({
         where: { id: { in: uniqueIds } },
@@ -63,156 +157,122 @@ export const checkAndNotifyOverdueProspects = async () => {
       });
     };
 
-    // First: email prospects directly if they have an email.
-    // We batch the DB update afterward to avoid one write per email.
-    for (const p of overdueProspects) {
-      if (p.email) {
-        try {
-          const res = await sendProspectOverdueReminderEmail(p.email, p);
-          if (res.success) {
-            prospectIdsToMarkNotified.add(p.id);
-            prospectEmailsSent++;
-          } else {
-            prospectEmailsFailed++;
-            console.error(`[Notification Service] Failed to send email to prospect ${p.email}: ${res.error}`);
+    const notifyOwnerGroups = async (prospects, type, titleForOwner, titleForAdmins, messageForOwner, messageForAdmins) => {
+      if (prospects.length === 0) return { sent: 0, failed: 0, prospectIds: [] };
+
+      const prospectIds = prospects.map((p) => p.id);
+      const groups = prospects.reduce((map, prospect) => {
+        const key = prospect.ownerId || "UNASSIGNED";
+        if (!map[key]) map[key] = [];
+        map[key].push(prospect);
+        return map;
+      }, {});
+
+      let sent = 0;
+      let failed = 0;
+
+      for (const [ownerId, groupProspects] of Object.entries(groups)) {
+        const owner = groupProspects[0].owner;
+        const recipients =
+          ownerId === "UNASSIGNED" || !owner
+            ? await getAdminUsers()
+            : [owner];
+
+        for (const recipient of recipients) {
+          const existingToday =
+            type === "due_today"
+              ? await prisma.notificationLog.findFirst({
+                  where: {
+                    userId: recipient.id,
+                    type,
+                    createdAt: { gte: todayStart },
+                  },
+                })
+              : null;
+
+          if (existingToday) continue;
+
+          try {
+            await prisma.notificationLog.create({
+              data: {
+                userId: recipient.id,
+                type,
+                title:
+                  recipient.role === "admin" && titleForAdmins
+                    ? titleForAdmins(groupProspects)
+                    : titleForOwner(groupProspects),
+                message:
+                  recipient.role === "admin" && messageForAdmins
+                    ? messageForAdmins(groupProspects)
+                    : messageForOwner(groupProspects),
+                metadata: { prospectCount: groupProspects.length, prospectIds: groupProspects.map((p) => p.id) },
+                read: false,
+              },
+            });
+            sent++;
+          } catch (error) {
+            failed++;
+            console.error(`[Notification Service] Failed to create ${type} notification for ${recipient.id}:`, error.message);
           }
-        } catch (err) {
-          prospectEmailsFailed++;
-          console.error(`[Notification Service] Error sending email to prospect ${p.email}:`, err.message);
         }
       }
-    }
 
-    // Group prospects by ownerId; unassigned ones go to 'UNASSIGNED'
-    const byOwner = overdueProspects.reduce((map, p) => {
-      const key = p.ownerId || "UNASSIGNED";
-      if (!map[key]) map[key] = [];
-      map[key].push(p);
-      return map;
-    }, {});
-
-    // Fetch admins only if we actually need the fallback path.
-    let admins = null;
-    const getAdmins = async () => {
-      if (!admins) {
-        admins = await prisma.user.findMany({
-          where: { role: "admin" },
-          select: { id: true, email: true, name: true },
-        });
-      }
-      return admins;
+      return { sent, failed, prospectIds };
     };
 
-    let sentCount = 0;
-    let failedCount = 0;
-
-    // Notify each owner (or admins for unassigned)
-    for (const [ownerId, prospects] of Object.entries(byOwner)) {
-      const prospectIds = prospects.map((p) => p.id);
-
-      if (ownerId === "UNASSIGNED") {
-        // Notify all admins about unassigned overdue prospects
-        const fallbackAdmins = await getAdmins();
-        for (const admin of fallbackAdmins) {
-          try {
-            const result = await sendOverdueNotificationEmail(admin.email, prospects);
-            if (result.success) {
-              await prisma.notificationLog.create({
-                data: {
-                  userId: admin.id,
-                  type: "overdue_prospects",
-                  title: `${prospects.length} Unassigned Overdue Follow-ups`,
-                  message: `There are ${prospects.length} unassigned prospect(s) with overdue follow-up dates.`,
-                  metadata: { prospectCount: prospects.length, prospectIds: prospects.map((p) => p.id) },
-                  read: false,
-                },
-              });
-              prospectIds.forEach((id) => prospectIdsToMarkNotified.add(id));
-              sentCount++;
-            } else {
-              failedCount++;
-              console.error(`[Notification Service] Failed to send email to admin ${admin.email}: ${result.error}`);
-            }
-          } catch (error) {
-            failedCount++;
-            console.error(`[Notification Service] Error notifying admin ${admin.id}:`, error.message);
-          }
-        }
-
-      } else {
-        // Notify the owner directly
-        const owner = prospects[0].owner;
-        if (!owner) {
-          // fallback to admins if owner missing
-          const fallbackAdmins = await getAdmins();
-          for (const admin of fallbackAdmins) {
-            try {
-              const result = await sendOverdueNotificationEmail(admin.email, prospects);
-              if (result.success) {
-                await prisma.notificationLog.create({
-                  data: {
-                    userId: admin.id,
-                    type: "overdue_prospects",
-                    title: `${prospects.length} Overdue Follow-ups (missing owner)`,
-                    message: `There are ${prospects.length} prospect(s) with overdue follow-up dates but the owner is missing.`,
-                    metadata: { prospectCount: prospects.length, prospectIds: prospects.map((p) => p.id) },
-                    read: false,
-                  },
-                });
-                prospectIds.forEach((id) => prospectIdsToMarkNotified.add(id));
-                sentCount++;
-              } else {
-                failedCount++;
-                console.error(`[Notification Service] Failed to send email to admin ${admin.email}: ${result.error}`);
-              }
-            } catch (error) {
-              failedCount++;
-              console.error(`[Notification Service] Error notifying admin ${admin.id}:`, error.message);
-            }
-          }
-
+    for (const prospect of overdueProspects) {
+      if (!prospect.email) continue;
+      try {
+        const res = await sendProspectOverdueReminderEmail(prospect.email, prospect);
+        if (res.success) {
+          prospectEmailsSent++;
         } else {
-          try {
-            const result = await sendOverdueNotificationEmail(owner.email, prospects);
-            if (result.success) {
-              await prisma.notificationLog.create({
-                data: {
-                  userId: owner.id,
-                  type: "overdue_prospects",
-                  title: `${prospects.length} Overdue Follow-ups`,
-                  message: `You have ${prospects.length} prospect(s) with overdue follow-up dates.`,
-                  metadata: { prospectCount: prospects.length, prospectIds: prospects.map((p) => p.id) },
-                  read: false,
-                },
-              });
-              prospectIds.forEach((id) => prospectIdsToMarkNotified.add(id));
-              sentCount++;
-            } else {
-              failedCount++;
-              console.error(`[Notification Service] Failed to send email to ${owner.email}: ${result.error}`);
-            }
-          } catch (error) {
-            failedCount++;
-            console.error(`[Notification Service] Error notifying owner ${owner.id}:`, error.message);
-          }
+          prospectEmailsFailed++;
+          console.error(`[Notification Service] Failed to send email to prospect ${prospect.email}: ${res.error}`);
         }
+      } catch (err) {
+        prospectEmailsFailed++;
+        console.error(`[Notification Service] Error sending email to prospect ${prospect.email}:`, err.message);
       }
     }
 
-    await markProspectsAsNotified([...prospectIdsToMarkNotified]);
+    const overdueResult = await notifyOwnerGroups(
+      overdueProspects,
+      "overdue_prospects",
+      (group) => `${group.length} Overdue Follow-ups`,
+      (group) => `${group.length} Overdue Follow-ups`,
+      (group) => `You have ${group.length} prospect(s) with overdue follow-up dates.`,
+      (group) => `There are ${group.length} prospect(s) with overdue follow-up dates.`
+    );
+    internalNotificationsSent += overdueResult.sent;
+    internalNotificationsFailed += overdueResult.failed;
+
+    await markProspectsAsNotified(overdueResult.prospectIds);
+
+    const dueTodayResult = await notifyOwnerGroups(
+      dueTodayProspects,
+      "due_today",
+      (group) => `${group.length} Due Today Follow-ups`,
+      (group) => `${group.length} Due Today Follow-ups`,
+      (group) => `You have ${group.length} prospect(s) due for follow-up today.`,
+      (group) => `There are ${group.length} prospect(s) due for follow-up today.`
+    );
+    internalNotificationsSent += dueTodayResult.sent;
+    internalNotificationsFailed += dueTodayResult.failed;
 
     console.log(
-      `[Notification Service] Notification cycle complete. Prospect emails sent: ${prospectEmailsSent}, failed: ${prospectEmailsFailed}. Internal notifications sent: ${sentCount}, failed: ${failedCount}`
+      `[Notification Service] Notification cycle complete. Prospect emails sent: ${prospectEmailsSent}, failed: ${prospectEmailsFailed}. Internal notifications sent: ${internalNotificationsSent}, failed: ${internalNotificationsFailed}`
     );
 
     return {
       success: true,
       overdueProspectsFound: overdueProspects.length,
+      dueTodayProspectsFound: dueTodayProspects.length,
       prospectEmailsSent,
       prospectEmailsFailed,
-      emailsSent: sentCount,
-      emailsFailed: failedCount,
-      usersNotified: sentCount,
+      emailsSent: internalNotificationsSent,
+      emailsFailed: internalNotificationsFailed,
+      usersNotified: internalNotificationsSent,
     };
   } catch (error) {
     console.error("[Notification Service] Error in checkAndNotifyOverdueProspects:", error.message);
@@ -220,17 +280,12 @@ export const checkAndNotifyOverdueProspects = async () => {
   }
 };
 
-/**
- * Get unread notifications for a user
- * @param {string} userId - User ID
- * @returns {Promise<Array>} Array of notifications
- */
 export const getUserNotifications = async (userId) => {
   try {
     const notifications = await prisma.notificationLog.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
-      take: 50, // Limit to last 50
+      take: 50,
     });
 
     return notifications;
@@ -240,11 +295,6 @@ export const getUserNotifications = async (userId) => {
   }
 };
 
-/**
- * Mark notification as read
- * @param {string} notificationId - Notification ID
- * @returns {Promise<object>} Updated notification
- */
 export const markNotificationAsRead = async (notificationId) => {
   try {
     const notification = await prisma.notificationLog.update({
@@ -259,11 +309,6 @@ export const markNotificationAsRead = async (notificationId) => {
   }
 };
 
-/**
- * Get unread notification count for a user
- * @param {string} userId - User ID
- * @returns {Promise<number>} Count of unread notifications
- */
 export const getUnreadCount = async (userId) => {
   try {
     const count = await prisma.notificationLog.count({

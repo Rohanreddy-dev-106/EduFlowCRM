@@ -33,7 +33,7 @@ export default class MainController {
     async createCard(req, res, next) {
         try {
             const payload = req.validated?.body || req.body;
-            const card = await createCardService(payload);
+            const card = await createCardService(payload, req.user);
             res.status(201).json({ success: true, data: card });
         } catch (err) {
             next(err);
@@ -45,7 +45,8 @@ export default class MainController {
             const payload = req.validated?.body || req.body;
             const updated = await updateCardService(
                 req.params.id,
-                payload
+                payload,
+                req.user
             );
             res.status(200).json({ success: true, data: updated });
         } catch (err) {

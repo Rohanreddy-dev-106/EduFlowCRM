@@ -80,12 +80,12 @@ export function useNotifications() {
     }
   }, []);
 
-  // Poll for new notifications every 30 seconds
+  // Poll the full list so new bell items appear without a manual refresh.
   useEffect(() => {
     fetchNotifications();
 
     const interval = setInterval(() => {
-      fetchUnreadCount();
+      fetchNotifications();
     }, 30000);
 
     return () => clearInterval(interval);

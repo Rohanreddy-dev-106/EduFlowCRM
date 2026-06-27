@@ -14,16 +14,22 @@ export function NotificationBell() {
     await markAsRead(notificationId);
   };
 
-  const getNotificationIcon = (type: string | undefined) => {
+  const getNotificationBadge = (type: string | undefined) => {
     switch (type) {
       case "overdue_prospects":
-        return "🔴";
+        return "OD";
+      case "due_today":
+        return "TD";
+      case "prospect_updated":
+        return "UP";
+      case "prospect_created":
+        return "CR";
       case "milestone":
-        return "🎉";
+        return "MI";
       case "alert":
-        return "⚠️";
+        return "!";
       default:
-        return "📢";
+        return "N";
     }
   };
 
@@ -68,7 +74,9 @@ export function NotificationBell() {
                     )}
                   >
                     <div className="flex items-start gap-3">
-                      <span className="mt-1 text-lg">{getNotificationIcon(notification.type)}</span>
+                      <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-md bg-gray-100 text-[10px] font-bold text-gray-700">
+                        {getNotificationBadge(notification.type)}
+                      </span>
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{notification.title}</h4>
                         <p className="mt-1 text-sm text-gray-600">{notification.message}</p>
